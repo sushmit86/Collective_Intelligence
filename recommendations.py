@@ -3,6 +3,7 @@
 # set of movies
 from math import sqrt
 import pandas as pd
+from scipy.spatial import distance
 
 critics = {'Lisa Rose': {'Lady in the Water': 2.5, 'Snakes on a Plane': 3.5,
                          'Just My Luck': 3.0, 'Superman Returns': 3.5, 'You, Me and Dupree': 2.5,
@@ -173,3 +174,20 @@ def getRecommendedItems(prefs,itemMatch,user):
     rankings.sort()
     rankings.reverse()
     return rankings
+
+########## All functions using pandas ###########
+# Calculating euclidean distance
+def pd_sim_distance(df_critics, person1, person2):
+    ser1 = df_critics[person1] - df_critics[person2]
+    return 1 / (1 + (ser1**2).sum())
+
+## to calculate pearson distance
+def pd_sim_pearson(df_critics, person1, person2):
+    return df_critics[person1].corr(df_critics[person2])
+
+
+def pd_top_matches(df_critics, person, n=5, similarity=pd_sim_pearson):
+    rankings = [(similarity(df_critics, person1, person),person1) for person1 in
+            list(set(df_critics.columns) - set({person}))]
+    rankings.sort(reverse= True)
+    return rankings[0:n]
