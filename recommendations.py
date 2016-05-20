@@ -191,3 +191,4 @@ def pd_top_matches(df_critics, person, n=5, similarity=pd_sim_pearson):
             list(set(df_critics.columns) - set({person}))]
     rankings.sort(reverse= True)
     return rankings[0:n]
+
