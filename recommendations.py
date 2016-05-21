@@ -224,13 +224,15 @@ def pd_calculateSimilarItems(df_critics, n=10):
         result[movie] = { item[1]:item[0]  for item in ret_tuple}
     return pd.DataFrame.from_dict(result)
 
+
 def pd_getRecommendedItems(df_critics, df_item_sim, person):
     result = []
 
     for movie_not_watched in df_critics[person][df_critics[person].isnull()].index:
-
-
-
-    return  result
-
-
+        movies_watched_series = df_critics[person][df_critics[person].notnull() & df_critics[person] != 0]
+        ser = df_item_sim[movie_not_watched] * movies_watched_series
+        ser1 = movies_watched_series / movies_watched_series
+        ser2 = df_item_sim[movie_not_watched] * ser1
+        if ser2.sum() > 0: result.append((ser.sum() / ser2.sum(), movie_not_watched))
+    result.sort(reverse=True)
+    return result
