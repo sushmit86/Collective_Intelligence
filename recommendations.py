@@ -4,6 +4,7 @@
 from math import sqrt
 import pandas as pd
 from scipy.spatial import distance
+from itertools import permutations
 
 critics = {'Lisa Rose': {'Lady in the Water': 2.5, 'Snakes on a Plane': 3.5,
                          'Just My Luck': 3.0, 'Superman Returns': 3.5, 'You, Me and Dupree': 2.5,
@@ -90,7 +91,7 @@ def topMatches(prefs, person, n=5, similarity=sim_pearson2):
     scores = [(similarity(prefs, person, other), other)
               for other in prefs if other != person]
     # Sort the list so the highest scores appear at the top scores.sort( )
-    scores.reverse()
+    scores.sort(reverse= True)
     return scores[0:n]
 
 
@@ -118,6 +119,7 @@ def getRecommendations(prefs, person, similarity=sim_pearson2):
                 simSums[item] += sim
     # Create the normalized list
     rankings = [(total / simSums[item], item) for item, total in totals.items()]
+
     # Return the sorted list
     rankings.sort()
     rankings.reverse()
@@ -146,7 +148,7 @@ def calculateSimilarItems(prefs, n=10):
         if c % 100 == 0:
             print("%d / %d" % (c, len(itemPrefs)))
         # Find the most similar items to this one
-        scores = topMatches(itemPrefs, item, n=n, similarity=sim_pearson2)
+        scores = topMatches(itemPrefs, item, n=n, similarity=sim_distance)
         result[item] = scores
     return result
 
@@ -189,6 +191,46 @@ def pd_sim_pearson(df_critics, person1, person2):
 def pd_top_matches(df_critics, person, n=5, similarity=pd_sim_pearson):
     rankings = [(similarity(df_critics, person1, person),person1) for person1 in
             list(set(df_critics.columns) - set({person}))]
-    rankings.sort(reverse= True)
+    rankings.sort(reverse = True)
     return rankings[0:n]
+
+
+def pd_getRecommendations(df_critics, person, similarity=pd_sim_pearson):
+    rec_list = []
+    similarity_series = pd.Series(
+        {item[1]: 0.5*(item[0] + abs(item[0])) for item in pd_top_matches(df_critics, person, similarity=similarity)})
+    for movie in list(df_critics[person][df_critics[person].isnull()].index):
+        # To get rating people who have rated the movie
+        rating_series = df_critics.loc[movie][df_critics.loc[movie].notnull()]
+        #score = (similarity_series * rating_series).sum()/(similarity_series*(rating_series/rating_series).sum())
+        total = (similarity_series * rating_series).sum()
+        sim_sum = (similarity_series*(rating_series/rating_series)).sum()
+        if sim_sum > 0:
+            rec_list.append((total/sim_sum,movie))
+    rec_list.sort(reverse=True)
+
+    return rec_list
+
+
+def pd_calculateSimilarItems(df_critics, n=10):
+    df_movies = df_critics.transpose()
+    result = {}
+    c = 0
+    for movie in df_movies.columns:
+        c += 1
+        if c % 100 == 0:
+            print("%d / %d" % (c, len(df_movies)))
+        ret_tuple = pd_top_matches(df_movies, movie, n=n, similarity=pd_sim_distance)
+        result[movie] = { item[1]:item[0]  for item in ret_tuple}
+    return pd.DataFrame.from_dict(result)
+
+def pd_getRecommendedItems(df_critics, df_item_sim, person):
+    result = []
+
+    for movie_not_watched in df_critics[person][df_critics[person].isnull()].index:
+
+
+
+    return  result
+
 
